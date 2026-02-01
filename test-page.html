@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VDH Simulator Test Page</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        .section { margin-bottom: 20px; border: 1px solid #ddd; padding: 15px; border-radius: 8px; }
+        button { padding: 10px 15px; cursor: pointer; margin-right: 10px; }
+        video { max-width: 300px; border: 1px solid #000; margin-top: 10px; display: block; }
+    </style>
+</head>
+<body>
+    <h1>Video DownloadHelper Simulator Test</h1>
+    <p>This page simulates various video loading scenarios to test the greasemonkey script.</p>
+
+    <div class="section">
+        <h2>1. DOM Video Tag</h2>
+        <p>A standard &lt;video&gt; element with sources.</p>
+        <video controls>
+            <source src="https://www.w3schools.com/html/mov_bbb.mp4" type="video/mp4">
+            <source src="https://www.w3schools.com/html/mov_bbb.ogg" type="video/ogg">
+            Your browser does not support HTML5 video.
+        </video>
+    </div>
+
+    <div class="section">
+        <h2>2. Dynamic Network Requests (Fetch/XHR)</h2>
+        <p>Click buttons to simulate background requests (like HLS/DASH manifests).</p>
+        
+        <button onclick="simulateHLS()">Simulate HLS (.m3u8)</button>
+        <button onclick="simulateDASH()">Simulate DASH (.mpd)</button>
+        <button onclick="simulateDASH()">Simulate MP4 (Fetch)</button>
+    </div>
+
+    <div class="section">
+        <h2>3. Dynamic DOM Injection</h2>
+        <button onclick="injectVideo()">Inject New Video Tag</button>
+        <div id="injection-zone"></div>
+    </div>
+
+    <script>
+        function simulateHLS() {
+            console.log('Simulating HLS fetch...');
+            fetch('https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8?token=test');
+        }
+
+        function simulateDASH() {
+            console.log('Simulating DASH fetch...');
+            // Need a valid-ish url structure for regex to catch it, functionality doesn't matter (404 is fine as long as request is sent)
+            fetch('https://dash.akamaized.net/akamai/bbb_30fps/bbb_30fps.mpd');
+        }
+
+        function simulateMP4() {
+             fetch('https://media.w3.org/2010/05/sintel/trailer.mp4');
+        }
+
+        function injectVideo() {
+            const container = document.getElementById('injection-zone');
+            container.innerHTML = '<h3>Injected Video</h3>';
+            const v = document.createElement('video');
+            v.controls = true;
+            v.src = "https://media.w3.org/2010/05/sintel/trailer.mp4";
+            container.appendChild(v);
+        }
+    </script>
+</body>
+</html>
