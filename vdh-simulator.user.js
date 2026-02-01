@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         VDH Simulator
+// @name         VDH Simulator (YT + Hotmart)
 // @namespace    http://tampermonkey.net/
-// @version      0.1
-// @description  Simulates Video DownloadHelper functionality: network monitoring and video detection
+// @version      0.7
+// @description  Video DownloadHelper with yt-dlp - YouTube + Hotmart (Robust)
 // @author       Antigravity
 // @match        *://*/*
 // @grant        GM_setClipboard
@@ -23,6 +23,13 @@
     // --- Config ---
     const MEDIA_EXTENSIONS = /\.(mp4|webm|flv|m3u8|mpd|mov|avi|mkv)(\?|$)/i;
     const MANIFEST_EXTENSIONS = /\.(m3u8|mpd)(\?|$)/i;
+    const YOUTUBE_PATTERNS = [
+        /youtube\.com\/watch/i,
+        /youtu\.be\//i,
+        /youtube\.com\/embed\//i,
+        /youtube\.com\/v\//i,
+        /youtube\.com\/shorts\//i
+    ];
 
     // --- Modules ---
 
@@ -60,7 +67,59 @@
         return originalOpen.apply(this, arguments);
     };
 
-    // 2. DOM Observer
+    // 2. YouTube Detection (SPA robust)
+    function detectYouTube() {
+        const currentUrl = window.location.href;
+        const hostname = window.location.hostname;
+
+        // Check if we're on YouTube
+        if (!hostname.includes('youtube.com') && !hostname.includes('youtu.be')) {
+            return;
+        }
+
+        // Check if it's a video page
+        const isYouTubeVideo = YOUTUBE_PATTERNS.some(pattern => pattern.test(currentUrl));
+        if (!isYouTubeVideo) {
+            return;
+        }
+
+        // Extract video ID
+        let videoId = '';
+        const urlParams = new URLSearchParams(window.location.search);
+
+        if (urlParams.has('v')) {
+            videoId = urlParams.get('v');
+        } else if (currentUrl.includes('youtu.be/')) {
+            videoId = currentUrl.split('youtu.be/')[1].split('?')[0].split('/')[0];
+        } else if (currentUrl.includes('/embed/')) {
+            videoId = currentUrl.split('/embed/')[1].split('?')[0].split('/')[0];
+        } else if (currentUrl.includes('/shorts/')) {
+            videoId = currentUrl.split('/shorts/')[1].split('?')[0].split('/')[0];
+        }
+
+        if (!videoId) {
+            console.log('[VDH Sim] YouTube page detected but no video ID found');
+            return;
+        }
+
+        // Use video ID as unique key to avoid duplicates
+        const uniqueKey = `youtube_${videoId}`;
+        if (detectedMedia.has(uniqueKey)) {
+            return;
+        }
+
+        console.log('[VDH Sim] YouTube video detected:', videoId);
+
+        // Add YouTube video
+        addMedia(uniqueKey, {
+            type: 'YOUTUBE',
+            filename: `YouTube_${videoId}`,
+            url: currentUrl, // We use the page URL for yt-dlp
+            videoId: videoId
+        });
+    }
+
+    // 3. DOM Observer
     function scanDom() {
         const videos = document.querySelectorAll('video');
         videos.forEach(v => {
@@ -69,6 +128,9 @@
                 if (s.src) processUrl(s.src);
             });
         });
+
+        // Check for YouTube on every DOM scan
+        detectYouTube();
     }
 
     const observer = new MutationObserver((mutations) => {
@@ -85,7 +147,7 @@
         }
     }
 
-    // 3. UI Controller
+    // 4. UI Controller
     function createUI() {
         if (uiButton) return; // Already created
 
@@ -111,7 +173,7 @@
             opacity: '0.5' // Dim when inactive
         });
 
-        // Icon (Simple 3 dots colored)
+        // Icon
         uiButton.innerHTML = `<span style="font-size:20px;">🎬</span>`;
 
         // Badge
@@ -142,7 +204,7 @@
             position: 'fixed',
             top: '70px',
             right: '20px',
-            width: '300px',
+            width: '350px',
             backgroundColor: '#fff',
             border: '1px solid #ccc',
             borderRadius: '8px',
@@ -183,14 +245,30 @@
         }
     }
 
-    function addMedia(url) {
+    function addMedia(url, customData = null) {
         if (detectedMedia.has(url)) return;
 
-        // Metadata
-        const type = MANIFEST_EXTENSIONS.test(url) ? 'STREAM' : 'FILE';
-        const filename = url.split('/').pop().split('?')[0] || 'video';
+        // Metadata detection
+        let type, filename, videoId;
 
-        detectedMedia.set(url, { type, filename, url });
+        if (customData) {
+            type = customData.type || 'FILE';
+            filename = customData.filename || 'video';
+            videoId = customData.videoId || null;
+        } else {
+            type = MANIFEST_EXTENSIONS.test(url) ? 'STREAM' : 'FILE';
+            filename = url.split('/').pop().split('?')[0] || 'video';
+
+            // Simple filename cleanup for streams
+            if (filename === 'master.m3u8' || filename === 'manifest.mpd') {
+                try {
+                    // Try browser title as fallback
+                    filename = document.title.split(' - ')[0].trim().replace(/[^a-z0-9]/gi, '_');
+                } catch (e) { }
+            }
+        }
+
+        detectedMedia.set(url, { type, filename, url, videoId, ...(customData || {}) });
 
         // Update UI
         if (!uiList) createUI();
@@ -223,10 +301,11 @@
         const actions = document.createElement('div');
         actions.style.display = 'flex';
         actions.style.gap = '5px';
+        actions.style.flexWrap = 'wrap';
 
         if (type === 'FILE') {
-            const btn = createBtn('Download', '#007bff');
-            btn.onclick = () => {
+            const btnDirect = createBtn('Download', '#007bff');
+            btnDirect.onclick = () => {
                 const a = document.createElement('a');
                 a.href = url;
                 a.download = filename;
@@ -234,50 +313,103 @@
                 a.click();
                 document.body.removeChild(a);
             };
-            actions.appendChild(btn);
+            actions.appendChild(btnDirect);
+
+            const btnYtdlp = createBtn('yt-dlp cmd', '#28a745');
+            btnYtdlp.onclick = () => {
+                const cmd = `yt-dlp -o "%(title)s.%(ext)s" "${url}"`;
+                GM_setClipboard(cmd);
+                alert('Comando yt-dlp copiado!');
+            };
+            actions.appendChild(btnYtdlp);
+
+        } else if (type === 'YOUTUBE') {
+            // YouTube Specific Buttons
+
+            // Best Quality
+            const btnBest = createBtn('yt-dlp (Melhor)', '#FF0000');
+            btnBest.onclick = () => {
+                const cmd = `yt-dlp --extractor-args "youtube:player_client=android,web" -f "bestvideo+bestaudio/best" --merge-output-format mp4 -o "%(title)s.%(ext)s" "${customData.url}"`;
+                GM_setClipboard(cmd);
+                alert('Comando yt-dlp (Melhor Qualidade) copiado!');
+            };
+            actions.appendChild(btnBest);
+
+            // Audio Only (User Request)
+            const btnAudio = createBtn('Áudio (MP3)', '#17a2b8');
+            btnAudio.onclick = () => {
+                const cmd = `yt-dlp --extractor-args "youtube:player_client=android,web" -x --audio-format mp3 --audio-quality 0 -o "%(title)s.%(ext)s" "${customData.url}"`;
+                GM_setClipboard(cmd);
+                alert('Comando yt-dlp (Áudio MP3) copiado!');
+            };
+            actions.appendChild(btnAudio);
+
+            const btnLow = createBtn('720p', '#990000');
+            btnLow.onclick = () => {
+                const cmd = `yt-dlp --extractor-args "youtube:player_client=android,web" -f "bestvideo[height<=720]+bestaudio/best[height<=720]" --merge-output-format mp4 -o "%(title)s.%(ext)s" "${customData.url}"`;
+                GM_setClipboard(cmd);
+                alert('Comando yt-dlp (720p) copiado!');
+            };
+            actions.appendChild(btnLow);
+
+
         } else {
-            const btn = createBtn('Copy yt-dlp', '#28a745');
-            btn.onclick = () => {
+            // GENERIC STREAM (m3u8/mpd) - Uses ROBUST injection (Hotmart friendly)
+
+            const btnRobust = createBtn('Copy yt-dlp', '#28a745');
+            btnRobust.onclick = () => {
                 // Determine output extension
                 const ext = url.includes('.m3u8') ? 'mp4' : 'mkv';
 
-                // Construct basic headers
-                // yt-dlp is smarter and handles many things, but we still pass Referer/UA to be safe.
-
+                // Construct basic headers manually
                 const referer = window.location.href;
                 const userAgent = navigator.userAgent;
                 const cookies = document.cookie;
 
                 // Build yt-dlp command
-                // --referer: dedicated flag
-                // --user-agent: dedicated flag
-                // Use double quotes for best cross-platform shell compatibility
-
                 let cmd = `yt-dlp "${url}"`;
                 cmd += ` --referer "${referer}"`;
                 cmd += ` --user-agent "${userAgent.replace(/"/g, '\\"')}"`;
 
-                // Using --add-header for cookie is viable or saving to file, but simplistic approach here:
+                // Inject browser cookies manually via header (No local file dependency)
                 if (cookies) {
-                    // Escaping cookies for shell is extremely hard due to spaces and special chars.
-                    // We attempt a best effort with --add-header "Cookie: ..."
                     cmd += ` --add-header "Cookie:${cookies.replace(/"/g, '\\"')}"`;
                 }
 
                 // Force output format name with detected title
-                // We wrap filename in quotes to handle spaces
                 cmd += ` -o "${filename}.${ext}"`;
 
                 GM_setClipboard(cmd);
                 alert(`yt-dlp command for "${filename}" copied!`);
             };
-            actions.appendChild(btn);
+            actions.appendChild(btnRobust);
+
+            // Audio Only for Streams (Added Feature)
+            const btnAudio = createBtn('Copy Audio', '#17a2b8');
+            btnAudio.onclick = () => {
+                const referer = window.location.href;
+                const userAgent = navigator.userAgent;
+                const cookies = document.cookie;
+
+                let cmd = `yt-dlp "${url}"`;
+                cmd += ` --referer "${referer}"`;
+                cmd += ` --user-agent "${userAgent.replace(/"/g, '\\"')}"`;
+                if (cookies) {
+                    cmd += ` --add-header "Cookie:${cookies.replace(/"/g, '\\"')}"`;
+                }
+
+                cmd += ` -x --audio-format mp3 -o "${filename}.mp3"`;
+
+                GM_setClipboard(cmd);
+                alert(`yt-dlp audio command for "${filename}" copied!`);
+            };
+            actions.appendChild(btnAudio);
         }
 
         const copyUrl = createBtn('Copy URL', '#6c757d');
         copyUrl.onclick = () => {
-            GM_setClipboard(url);
-            alert('URL copied!');
+            GM_setClipboard(customData?.url || url);
+            alert('URL copiada!');
         };
         actions.appendChild(copyUrl);
 
@@ -307,7 +439,19 @@
             clearInterval(waitForBody);
             createUI();
             initObserver();
+            // Initial detection (important for when script loads after page)
+            detectYouTube();
         }
     }, 100);
+
+    // Also detect on URL changes (for SPA navigation)
+    let lastUrl = window.location.href;
+    setInterval(() => {
+        if (window.location.href !== lastUrl) {
+            lastUrl = window.location.href;
+            console.log('[VDH Sim] URL changed, re-scanning...');
+            detectYouTube();
+        }
+    }, 1000);
 
 })();

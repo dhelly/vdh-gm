@@ -9,6 +9,7 @@ Um Userscript (script de usuário) para **Greasemonkey/Tampermonkey** que simula
 *   **📦 Integração com yt-dlp**: Gera comandos prontos para o **[yt-dlp](https://github.com/yt-dlp/yt-dlp)**, resolvendo problemas de:
     *   Erro 403 Forbidden (inclui automaticamente `Referer` e `User-Agent`).
     *   Streams fragmentados (HLS/DASH).
+*   **🎵 Extração de Áudio**: Opção para baixar apenas o áudio (MP3) do vídeo detectado.
 *   **🏷️ Detecção de Título** (Experimental): Tenta nomear o arquivo final com base no contexto da página.
 *   **🎨 Interface Discreta**: Botão flutuante que notifica a quantidade de mídias detectadas.
 
@@ -31,9 +32,12 @@ Para que os comandos gerados funcionem, você precisa ter o **yt-dlp** instalado
 1.  Acesse uma página que contenha vídeos (ex: Hotmart, sites de streaming).
 2.  O ícone 🎬 aparecerá no canto superior direito se mídias forem detectadas.
 3.  Clique no ícone para ver a lista.
-4.  Clique em **"Copy yt-dlp"**.
+4.  Escolha a ação desejada:
+    *   **"Copy yt-dlp"**: Copia o comando para baixar o vídeo completo.
+    *   **"Copy Audio"**: Copia o comando para extrair apenas o áudio (MP3).
 5.  Abra seu terminal e cole o comando.
-    *   *Exemplo*: `yt-dlp "https://..." --referer "..." -o "video.mp4"`
+    *   *Exemplo Vídeo*: `yt-dlp "https://..." ... -o "video.mp4"`
+    *   *Exemplo Áudio*: `yt-dlp "https://..." ... -x --audio-format mp3 ...`
 
 ## ⚠️ Limitações
 
