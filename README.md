@@ -6,38 +6,42 @@ Um Userscript (script de usuário) para **Greasemonkey/Tampermonkey** que simula
 
 *   **🕵️ Monitoramento de Rede**: Intercepta requisições (`fetch`, `XHR`) para detectar vídeos (`.mp4`, `.webm`) e manifestos de streaming (`.m3u8`, `.mpd`).
 *   **👀 Observer de DOM**: Detecta vídeos inseridos via tags `<video>`.
-*   **📦 Integração com yt-dlp**: Gera comandos prontos para o **[yt-dlp](https://github.com/yt-dlp/yt-dlp)**, resolvendo problemas de:
-    *   Erro 403 Forbidden (inclui automaticamente `Referer` e `User-Agent`).
-    *   Streams fragmentados (HLS/DASH).
-*   **🎵 Extração de Áudio**: Opção para baixar apenas o áudio (MP3) do vídeo detectado.
+*   **� Suporte Híbrido Avançado**:
+    *   **YouTube**: Detecção nativa com correção para navegação SPA (Single Page Application) e botões dedicados de qualidade (Melhor, 720p).
+    *   **Hotmart/Outros**: Interceptação robusta de rede que injeta automaticamente `Referer`, `User-Agent` e `Cookies` no comando, prevenindo erros 403 sem depender de arquivos locais.
+*   **📦 Integração com yt-dlp**: Gera comandos prontos para copiar e colar no terminal.
+*   **🎵 Extração de Áudio**: Botão dedicado para baixar apenas o áudio (MP3) de qualquer vídeo detectado (com parâmetros otimizados para YouTube).
 *   **🏷️ Detecção de Título** (Experimental): Tenta nomear o arquivo final com base no contexto da página.
 *   **🎨 Interface Discreta**: Botão flutuante que notifica a quantidade de mídias detectadas.
 
 ## 🛠️ Pré-requisitos
 
-Para que os comandos gerados funcionem, você precisa ter o **yt-dlp** instalado no seu computador. Ele é uma ferramenta de linha de comando poderosa para downloads.
-
-*   **Linux**: `sudo apt install yt-dlp` ou `pip install yt-dlp`
-*   **Windows/Mac**: Baixe em [yt-dlp GitHub](https://github.com/yt-dlp/yt-dlp#installation).
+1.  **Tampermonkey**: Instale a extensão no seu navegador ([Chrome](https://chrome.google.com/webstore/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo) | [Firefox](https://addons.mozilla.org/pt-BR/firefox/addon/tampermonkey/)).
+2.  **yt-dlp**: Ferramenta de linha de comando essencial.
+    *   *Linux*: `sudo apt install yt-dlp` ou `pip install yt-dlp`
+    *   *Windows*: Baixe o `.exe` do [GitHub oficial](https://github.com/yt-dlp/yt-dlp).
 
 ## 📥 Instalação do Script
 
-1.  Instale uma extensão gerenciadora como **Violentmonkey** ou **Tampermonkey** no seu navegador.
-2.  Crie um novo script.
-3.  Copie e cole o conteúdo do arquivo [`vdh-simulator.user.js`](./vdh-simulator.user.js).
-4.  Salve e habilite o script.
+1.  Crie um novo script no Tampermonkey.
+2.  Copie o conteúdo do arquivo [`vdh-simulator.user.js`](./vdh-simulator.user.js) deste repositório.
+3.  Cole no editor do Tampermonkey e salve (Ctrl+S).
 
 ## 🎮 Como Usar
 
 1.  Acesse uma página que contenha vídeos (ex: Hotmart, sites de streaming).
-2.  O ícone 🎬 aparecerá no canto superior direito se mídias forem detectadas.
+2.  O botão **🎬** aparecerá no canto superior direito se mídias forem detectadas.
 3.  Clique no ícone para ver a lista.
 4.  Escolha a ação desejada:
-    *   **"Copy yt-dlp"**: Copia o comando para baixar o vídeo completo.
-    *   **"Copy Audio"**: Copia o comando para extrair apenas o áudio (MP3).
+    *   **YouTube**:
+        *   `yt-dlp (Melhor)`: Baixa a melhor qualidade possível.
+        *   `Áudio (MP3)`: Extrai apenas o áudio.
+        *   `720p`: Limita a qualidade para economizar espaço.
+    *   **Hotmart/Genérico**:
+        *   `Copy yt-dlp`: Gera o comando robusto com todos os headers necessários.
+        *   `Copy Audio`: Gera o comando para extrair áudio com os headers injetados.
 5.  Abra seu terminal e cole o comando.
-    *   *Exemplo Vídeo*: `yt-dlp "https://..." ... -o "video.mp4"`
-    *   *Exemplo Áudio*: `yt-dlp "https://..." ... -x --audio-format mp3 ...`
+    *   *Exemplo*: `yt-dlp "https://..." --referer "..." --add-header "Cookie:..." -o "video.mp4"`
 
 ## ⚠️ Limitações
 
