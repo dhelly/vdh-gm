@@ -8,7 +8,7 @@ Um Userscript (script de usuário) para **Greasemonkey/Tampermonkey** que simula
 *   **👀 Observer de DOM**: Detecta vídeos inseridos via tags `<video>`.
 *   **� Suporte Híbrido Avançado**:
     *   **YouTube**: Detecção nativa com correção para navegação SPA (Single Page Application) e botões dedicados de qualidade (Melhor, 720p).
-    *   **Hotmart/Outros**: Interceptação robusta de rede que injeta automaticamente `Referer`, `User-Agent` e `Cookies` no comando, prevenindo erros 403 sem depender de arquivos locais.
+    *   **Outros**: Interceptação robusta de rede que injeta automaticamente `Referer`, `User-Agent` e `Cookies` no comando, prevenindo erros 403 sem depender de arquivos locais.
 *   **📦 Integração com yt-dlp**: Gera comandos prontos para copiar e colar no terminal.
 *   **🎵 Extração de Áudio**: Botão dedicado para baixar apenas o áudio (MP3) de qualquer vídeo detectado (com parâmetros otimizados para YouTube).
 *   **🏷️ Detecção de Título** (Experimental): Tenta nomear o arquivo final com base no contexto da página.
@@ -29,7 +29,7 @@ Um Userscript (script de usuário) para **Greasemonkey/Tampermonkey** que simula
 
 ## 🎮 Como Usar
 
-1.  Acesse uma página que contenha vídeos (ex: Hotmart, sites de streaming).
+1.  Acesse uma página que contenha vídeos (ex: sites de streaming).
 2.  O botão **🎬** aparecerá no canto superior direito se mídias forem detectadas.
 3.  Clique no ícone para ver a lista.
 4.  Escolha a ação desejada:
@@ -37,7 +37,7 @@ Um Userscript (script de usuário) para **Greasemonkey/Tampermonkey** que simula
         *   `yt-dlp (Melhor)`: Baixa a melhor qualidade possível.
         *   `Áudio (MP3)`: Extrai apenas o áudio.
         *   `720p`: Limita a qualidade para economizar espaço.
-    *   **Hotmart/Genérico**:
+    *   **Genérico**:
         *   `Copy yt-dlp`: Gera o comando robusto com todos os headers necessários.
         *   `Copy Audio`: Gera o comando para extrair áudio com os headers injetados.
 5.  Abra seu terminal e cole o comando.
